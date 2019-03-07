@@ -1,0 +1,4 @@
+from skimage import io
+import numpy as np
+
+im = io.imread() #per tif image, converts to numpy array
