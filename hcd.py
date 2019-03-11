@@ -1,8 +1,27 @@
 from a3code import AlexNetFeatures
 
 def get_features ():
-  alexNet = AlexNetFeatures()
-  alexNet.eval()
+    alexNet = AlexNetFeatures()
+    alexNet.eval()
+  
+  train_img, train_label = importImages()
+  
+  train_features = []
+  valid_features = []
+  test_features = []
+  for i in range (len(train_img)):
+     x = alexNet(train_img[i].reshape([1, 3, 224, 224]))
+     train_features.append(x)
+   torch.save(train_features, 'train_features.pt')
+  for i in range (len(valid_img)):
+     x = alexNet(valid_img[i].reshape([1, 3, 224, 224]))
+     valid_features.append(x)
+  torch.save(valid_features, 'valid_features.pt')
+  for i in range (len(test_img)):
+    x = alexNet(test_img[i].reshape([1, 3, 224, 224]))
+    test_features.append(x)
+  torch.save(test_features, 'test_features.pt')
+
   
   
  class SmallNet(nn.Module):
