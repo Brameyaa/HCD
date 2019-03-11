@@ -63,6 +63,6 @@ def make_dataset(dir, label, extensions, transform):
     train_label.extend([train_label1, train_label2, train_label3, train_label4])
     
     
-    
+    return train_img, train_label
     
   
