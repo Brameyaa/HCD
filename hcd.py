@@ -10,15 +10,21 @@ def get_features ():
   valid_features = []
   test_features = []
   for i in range (len(train_img)):
-     x = alexNet(train_img[i].reshape([1, 3, 224, 224]))
-     train_features.append(x)
+    x = []
+    for j in range(54):
+         x.append(alexNet(train_img[j].reshape([1, 3, 224, 224])))
+    train_features.append(x)
    torch.save(train_features, 'train_features.pt')
   for i in range (len(valid_img)):
-     x = alexNet(valid_img[i].reshape([1, 3, 224, 224]))
-     valid_features.append(x)
+    x = []
+    for j in range(54):
+         x.append(alexNet(valid_img[j].reshape([1, 3, 224, 224])))
+    valid_features.append(x)
   torch.save(valid_features, 'valid_features.pt')
   for i in range (len(test_img)):
-    x = alexNet(test_img[i].reshape([1, 3, 224, 224]))
+    x = []
+    for j in range(54):
+         x.append(alexNet(test_img[j].reshape([1, 3, 224, 224])))
     test_features.append(x)
   torch.save(test_features, 'test_features.pt')
 
