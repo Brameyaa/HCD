@@ -43,11 +43,13 @@ def make_dataset(dir, label, extensions, transform):
      x = transform(img)
      label = filename[2]
      x = x.permute(2,0,1)
+     result = np.zeros((3, 2240, 1568))
+     result[:x.shape[0],:x.shape[1]] = x
      y = []
-     for i in range( 2048//224):
-        for j in range(1536//224):
+     for i in range(10):
+        for j in range(7):
           y.append(x[:, i * 224: (i + 1) * 224, j * 224: (j + 1) * 224]
-     y = y .reshape([54,3,224,224])
+     y = y.reshape([54,3,224,224])
      #x = x.reshape([3, 224, 224])
      images.append(y)
      labels.append(label)
