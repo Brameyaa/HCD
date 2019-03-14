@@ -42,9 +42,14 @@ def make_dataset(dir, label, extensions, transform):
      img = io.imread(d) #plt.imread(d)[:, :, :3]
      x = transform(img)
      label = filename[2]
-     x = x.permute(2,0,1) 
+     x = x.permute(2,0,1)
+     y = []
+     for i in range( 2048//224):
+        for j in range(1536//224):
+          y.append(x[:, i * 224: (i + 1) * 224, j * 224: (j + 1) * 224]
+     y = y .reshape([54,3,224,224])
      #x = x.reshape([3, 224, 224])
-     images.append(x)
+     images.append(y)
      labels.append(label)
    return images, np.array(labels)
    
