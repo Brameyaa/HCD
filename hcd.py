@@ -22,22 +22,27 @@ def get_features ():
             x = []
             for k in range(len(train_img[i][j])):
                 x.append(alexNet(train_img[i][j][k].unsqueeze(0)))
-            train_features.append(x)
-    torch.save(train_features, 'train_features.pt')
+            #train_features.append(x)
+            filename = 'train_features' + str(i) + "_" + str(j) +'.pt'
+            torch.save(x, filename)
     for i in range (len(valid_img)):
         for j in range(len(valid_img[i])):  
             x = []
             for k in range(len(valid_img[i][j])):
                 x.append(alexNet(valid_img[i][j][k].unsqueeze(0)))
-            valid_features.append(x)
-    torch.save(valid_features, 'valid_features.pt')
+            #valid_features.append(x)
+            filename = 'valid_features' + str(i) + "_" + str(j) +'.pt'
+            torch.save(x, filename)
     for i in range (len(test_img)):
         for j in range(len(test_img[i])): 
             x = []
             for k in range(len(test_img[i][j])):
                 x.append(alexNet(test_img[i][j][k].reshape([1, 3, 224, 224])))
-            test_features.append(x)
-    torch.save(test_features, 'test_features.pt')
+                
+            #test_features.append(x)\
+
+            filename = 'test_features' + str(i) + "_"+ str(j) +'.pt'
+            torch.save(x, filename)
 
   
 class SmallNet(nn.Module):
