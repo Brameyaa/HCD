@@ -69,10 +69,14 @@ class SmallNet(nn.Module):
 def load_features(dir, label):
     dir = os.path.expanduser(dir)
     tensors = []
+#    count = 0
     for target in sorted(os.listdir(dir)):
         d = os.path.join(dir, target)
         print (d)
         tensors.append((torch.load(d), label))
+#        if (count == 5):
+#         break
+#        count += 1
     return tensors
 
 def evaluate(net, valid, criterion):
@@ -80,20 +84,23 @@ def evaluate(net, valid, criterion):
     total_err = 0.0
 
     for i in range(len(valid)):
-        optimizer.zero_grad()
         feature,label = train[i]
         outputs = torch.zeros(70, 1, 2)
         prediction = 0
         lossOutput = torch.zeros(1,2)
+        
         for j in range(len(feature)):
             outputs[j] = (net(feature[j]))
             if (outputs.max(1, keepdim=True) == 1):
                 prediction = 1
                 lossOutput = outputs[j]
+                
         if (prediction != 1):
             lossOutput = torch.mean(outputs, dim=0, keepdim=True)
+        loss = criterion(lossOutput.squeeze(0), label)
+        
         total_err += prediction != label.item()
-        total_loss += lossOutput.item()
+        total_loss += loss.item()
 
     err = float(total_err)/len(valid)
     loss = float(total_loss)/len(valid)
@@ -155,6 +162,8 @@ def train_net(net, train, valid, learning_rate=0.001, weight_decay = 0, num_epoc
             train_loss[epoch],
             val_err[epoch],
             val_loss[epoch]))
+        model_path = 'Model_Epoch'+ str(epoch)
+        torch.save(net.state_dict(), model_path)
             
             
             
