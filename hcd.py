@@ -20,63 +20,74 @@ def get_features ():
     train_features = []
     valid_features = []
     test_features = []
-    for i in range (len(train_img)): # class 0/1 is non-cancerous, 2,3 is cancerous
-        for j in range(len(train_img[i])):
-            x = alexNet(train_img[i][j][0].unsqueeze(0))
-            for k in range(1,len(train_img[i][j])):
-                x = torch.cat((x,alexNet(train_img[i][j][k].unsqueeze(0))), dim=2)
-            print (x.shape)
-            filename = 'train_features' + str(i) + "_" + str(j) +'.pt'
-            torch.save(x, filename)
+##    for i in range (len(train_img)): # class 0/1 is non-cancerous, 2,3 is cancerous
+##        for j in range(len(train_img[i])):
+##            x = []
+##            for k in range(len(train_img[i][j])):
+##                x.append(alexNet(train_img[i][j][k].unsqueeze(0)).squeeze(0))
+##            x = torch.stack(x)
+##            filename = 'train_features' + str(i) + "_" + str(j) +'.pt'
+##            print(x.shape)
+##            torch.save(x, filename)
     for i in range (len(valid_img)):
         for j in range(len(valid_img[i])):  
-            x = alexNet(valid_img[i][j][0].unsqueeze(0))
-            for k in range(1,len(valid_img[i][j])):
-                x = torch.cat((x,alexNet(valid_img[i][j][k].unsqueeze(0))), dim=2)
- 
+            x = []
+            for k in range(len(valid_img[i][j])):
+                x.append(alexNet(valid_img[i][j][k].unsqueeze(0)).squeeze(0))
+            x = torch.stack(x)
             filename = 'valid_features' + str(i) + "_" + str(j) +'.pt'
             torch.save(x, filename)
     for i in range (len(test_img)):
         for j in range(len(test_img[i])): 
-            x = alexNet(test_img[i][j][0].unsqueeze(0))
-            for k in range(1,len(test_img[i][j])):
-                x = torch.cat((x,alexNet(test_img[i][j][k].unsqueeze(0))), dim=2)
-                
-
+            x = []
+            for k in range(len(test_img[i][j])):
+                x.append(alexNet(test_img[i][j][k].unsqueeze(0)).squeeze(0))
+            x = torch.stack(x)
             filename = 'test_features' + str(i) + "_"+ str(j) +'.pt'
             torch.save(x, filename)
-
-  
+            
 class SmallNet(nn.Module):
     def __init__(self):
         super(SmallNet, self).__init__()
         self.name = "small"
-        self.conv1 = nn.Conv2d(6, 12, kernel_size = 2, stride = 2)
-        self.conv2 = nn.Conv2d(12, 24, kernel_size=2, stride = 2)
-        self.conv3 = nn.Conv2d(24, 48, kernel_size=2, stride = 2)
-        self.pool = nn.MaxPool2d(4, 4)
-        self.fc1 = nn.Linear(4992, 2000) 
-        self.fc2 = nn.Linear(2000, 500)
-        self.fc3 = nn.Linear(500, 2)
+        self.conv = nn.Conv2d(256, 512, 3)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.fc = nn.Linear(128 * 2 * 2, 2)
     def forward(self, x):
-        #print (x.shape)        
-        x = x.permute(0, 3, 1, 2)
-        #print (x.shape)
-        x = F.relu(self.conv1(x))
-        #print (x.shape)
-        x = F.relu(self.conv2(x))
-        #print (x.shape)
-        x = F.relu(self.conv3(x))
-        #print (x.shape)
+        x = self.pool(F.relu(self.conv(x)))
         x = self.pool(x)
-        #print(x.shape)
-        x = x.view(-1, 48 * 8 * 13)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
+        x = x.view(-1, 128 * 2 * 2)
+        x = self.fc(x)
         x = x.squeeze(1) # Flatten to [batch_size]
 
         return x
+  
+##class SmallNet(nn.Module):
+##    def __init__(self):
+##        super(SmallNet, self).__init__()
+##        self.name = "small"
+##        self.conv1 = nn.Conv2d(6, 12, kernel_size = 2, stride = 2)
+##        self.conv2 = nn.Conv2d(12, 24, kernel_size=2, stride = 2)
+##        self.conv3 = nn.Conv2d(24, 48, kernel_size=2, stride = 2)
+##        self.pool = nn.MaxPool2d(4, 4)
+##        self.fc1 = nn.Linear(4992, 2000) 
+##        self.fc2 = nn.Linear(2000, 500)
+##        self.fc3 = nn.Linear(500, 2)
+##    def forward(self, x):    
+##        x = x.permute(0, 3, 1, 2)
+##        x = F.relu(self.conv1(x))
+##        x = F.relu(self.conv2(x))
+##        x = F.relu(self.conv3(x))
+##        x = self.pool(x)
+##        x = x.view(-1, 48 * 8 * 13)
+##        x = F.relu(self.fc1(x))
+##        x = F.relu(self.fc2(x))
+##        x = F.relu(self.fc3(x))
+##        print ('1', x.shape)
+##        #x = x.squeeze(1) # Flatten to [batch_size]
+##        print('2', x.shape)
+##
+##        return x
 
 #get_features()
 
@@ -87,10 +98,11 @@ def load_features(dir): # label):
     for target in sorted(os.listdir(dir)):
         d = os.path.join(dir, target)
         print (d)
-        tensors.append((torch.load(d).squeeze(0))) #, label))
+        tensors.extend(torch.load(d).squeeze(0)) #, label))
 #        if (count == 5):
 #         break
 #        count += 1
+    #tensors = torch.stack(tensors)
     return tensors
 
 def evaluate(net, validloader, criterion):
@@ -140,12 +152,6 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
  
             feature = data[0]#.squeeze(0)
             label = data[1]
-
-
-            #print (feature.shape, label.shape)
-            #target = Variable(torch.Tensor(label).long())
-            #print (label.shape)
-            #outputs = torch.zeros(70, 1, 2)
             prediction = 0
 
             outputs = net(feature)
@@ -154,23 +160,8 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
             loss.backward()
             optimizer.step()
 
-##            
-##            lossOutput = torch.zeros(1,2)
-##            for j in range(len(feature)):
-##                outputs[j] = (net(feature[j]))
-##                if (outputs.max(1, keepdim=True) == 1):
-##                    prediction = 1
-##                    lossOutput = outputs[j]
-##            if (prediction != 1):
-##                lossOutput = torch.mean(outputs, dim=0, keepdim=True)
-
-##            loss = criterion(lossOutput.squeeze(0), label)
-##            loss.backward()
-##            optimizer.step()
-
             prediction = outputs.max(1, keepdim=True)[1]
-            #print (prediction.item(), label.item(), prediction.item() != label.item())
-            #total_train_err += (prediction.item() != label.long().item())
+
             total_train_err += prediction.ne(label.long().view_as(prediction)).sum().item()
 
             total_train_loss +=loss.item()
@@ -201,14 +192,16 @@ non_cancerous = 0
 train = load_features('Train_Alexnet_features_cancerous') #, cancerous)
 train_labels = [non_cancerous] * len(train)
 lenC = len(train)
+
 train.extend(load_features('Train_Alexnet_features_non_cancerous')) #, non_cancerous))
 train_labels.extend([cancerous] * (len(train)- lenC))
 train_labels = np.array(train_labels)
 
 train = torch.stack(train)
 print (train.shape)
+print (len(train_labels))
 training_set = Dataset(train, train_labels)
-trainloader = torch.utils.data.DataLoader(training_set, batch_size=5, shuffle=True,num_workers=0)
+trainloader = torch.utils.data.DataLoader(training_set, batch_size=100, shuffle=True,num_workers=0)
 
 valid = load_features('Valid_Alexnet_features_cancerous') #, cancerous)
 valid_labels = [non_cancerous] * len(valid)
@@ -219,7 +212,7 @@ valid_labels = np.array(valid_labels)
 
 valid = torch.stack(valid)
 valid_set = Dataset(valid, valid_labels)
-validloader = torch.utils.data.DataLoader(valid_set, batch_size=5, shuffle=True,num_workers=0)
+validloader = torch.utils.data.DataLoader(valid_set, batch_size=100, shuffle=True,num_workers=0)
              
 smallnet = SmallNet()
 train_net(smallnet, trainloader, validloader, num_epochs=100)
