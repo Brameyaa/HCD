@@ -39,6 +39,7 @@ def make_dataset(dir, label, extensions, transform):
 
    
    dir = os.path.expanduser(dir)
+   count = 0
 
    for target in sorted(os.listdir(dir)):
      d = os.path.join(dir, target)
@@ -62,6 +63,9 @@ def make_dataset(dir, label, extensions, transform):
      #x = x.reshape([3, 224, 224])
      images.append(y)
      labels.append(label)
+     count += 1
+     if count == 5:
+        break
 
    return images, np.array(labels)
    
