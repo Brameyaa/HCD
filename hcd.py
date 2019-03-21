@@ -8,6 +8,8 @@ import torchvision.transforms as transforms
 import torch.optim as optim
 import os
 import os.path
+import time
+from plot_graph import plot_training_curve
 from random import shuffle
 from torch.autograd import Variable
 
@@ -105,7 +107,7 @@ def load_features(dir): # label):
     #tensors = torch.stack(tensors)
     return tensors
 
-def evaluate(net, validloader, criterion):
+def evaluate(net, validloader, criterion): #Evaluate the network on the validation set
     total_loss = 0.0
     total_err = 0.0
     total_epoch = 0
@@ -139,7 +141,9 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
     train_loss = np.zeros(num_epochs)
     val_err = np.zeros(num_epochs)
     val_loss = np.zeros(num_epochs)
+    start_time = time.time()
 
+    #n = 0  # the number of iterations
     for epoch in range(num_epochs):
         #shuffle(train)
         total_train_loss = 0.0
@@ -148,24 +152,35 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
         total_epoch = 0
         for i, data in enumerate(trainloader, 0):
         #for i in range(len(train)):
-            optimizer.zero_grad()
+            optimizer.zero_grad() #Cleanup happens before too?
  
             feature = data[0]#.squeeze(0)
             label = data[1]
             prediction = 0
 
+            #Begin Forward Pass
             outputs = net(feature)
             #print (label.shape)
-            loss = criterion(outputs, label.long())
+            loss = criterion(outputs, label.long()) #compute total Loss
+
+            #Begin Backward Pass
             loss.backward()
             optimizer.step()
+            optimizer.zero_grad()  # a clean up step for PyTorch #Jenn
 
-            prediction = outputs.max(1, keepdim=True)[1]
+            prediction = outputs.max(1, keepdim=True)[1]  #maxpool the result
 
             total_train_err += prediction.ne(label.long().view_as(prediction)).sum().item()
 
             total_train_loss +=loss.item()
             total_epoch += len(label)
+
+            #Accuracy from week 3
+            #iters.append(n)
+            #losses.append(float(loss) / batch_size)  # compute *average* loss
+            #train_acc.append(get_accuracy(model, train=True))  # compute training accuracy
+            #val_acc.append(get_accuracy(model, train=False))  # compute validation accuracy
+            #n += 1
 
         train_err[epoch] = float(total_train_err)/total_epoch
         train_loss[epoch] = float(total_train_loss)/(i + 1)
@@ -179,7 +194,17 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
             val_loss[epoch]))
         model_path = 'Model_Epoch'+ str(epoch)
         torch.save(net.state_dict(), model_path)
-            
+
+    print('Finished Training')
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print("Total time elapsed: {:.2f} seconds".format(elapsed_time))
+    epochs = np.arange(1, num_epochs + 1)
+
+    np.savetxt("{}_train_err.csv".format(model_path), train_err)
+    np.savetxt("{}_train_loss.csv".format(model_path), train_loss)
+    np.savetxt("{}_val_err.csv".format(model_path), val_err)
+    np.savetxt("{}_val_loss.csv".format(model_path), val_loss)
             
             
 #non_cancerous = [[1,0]]
@@ -215,6 +240,8 @@ valid_set = Dataset(valid, valid_labels)
 validloader = torch.utils.data.DataLoader(valid_set, batch_size=100, shuffle=True,num_workers=0)
              
 smallnet = SmallNet()
-train_net(smallnet, trainloader, validloader, num_epochs=100)
+train_net(smallnet, trainloader, validloader, num_epochs=20)
 
+#plotting - enter the train parameters and destination
+plot_training_curve('Model_Epoch19',20)
 
