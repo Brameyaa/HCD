@@ -22,15 +22,15 @@ def get_features ():
     train_features = []
     valid_features = []
     test_features = []
-##    for i in range (len(train_img)): # class 0/1 is non-cancerous, 2,3 is cancerous
-##        for j in range(len(train_img[i])):
-##            x = []
-##            for k in range(len(train_img[i][j])):
-##                x.append(alexNet(train_img[i][j][k].unsqueeze(0)).squeeze(0))
-##            x = torch.stack(x)
-##            filename = 'train_features' + str(i) + "_" + str(j) +'.pt'
-##            print(x.shape)
-##            torch.save(x, filename)
+    for i in range (len(train_img)): # class 0/1 is non-cancerous, 2,3 is cancerous
+        for j in range(len(train_img[i])):
+            x = []
+            for k in range(len(train_img[i][j])):
+                x.append(alexNet(train_img[i][j][k].unsqueeze(0)).squeeze(0))
+            x = torch.stack(x)
+            filename = 'train_features' + str(i) + "_" + str(j) +'.pt'
+            print(x.shape)
+            torch.save(x, filename)
     for i in range (len(valid_img)):
         for j in range(len(valid_img[i])):  
             x = []
@@ -64,46 +64,27 @@ class SmallNet(nn.Module):
 
         return x
   
-##class SmallNet(nn.Module):
-##    def __init__(self):
-##        super(SmallNet, self).__init__()
-##        self.name = "small"
-##        self.conv1 = nn.Conv2d(6, 12, kernel_size = 2, stride = 2)
-##        self.conv2 = nn.Conv2d(12, 24, kernel_size=2, stride = 2)
-##        self.conv3 = nn.Conv2d(24, 48, kernel_size=2, stride = 2)
-##        self.pool = nn.MaxPool2d(4, 4)
-##        self.fc1 = nn.Linear(4992, 2000) 
-##        self.fc2 = nn.Linear(2000, 500)
-##        self.fc3 = nn.Linear(500, 2)
-##    def forward(self, x):    
-##        x = x.permute(0, 3, 1, 2)
-##        x = F.relu(self.conv1(x))
-##        x = F.relu(self.conv2(x))
-##        x = F.relu(self.conv3(x))
-##        x = self.pool(x)
-##        x = x.view(-1, 48 * 8 * 13)
-##        x = F.relu(self.fc1(x))
-##        x = F.relu(self.fc2(x))
-##        x = F.relu(self.fc3(x))
-##        print ('1', x.shape)
-##        #x = x.squeeze(1) # Flatten to [batch_size]
-##        print('2', x.shape)
-##
-##        return x
-
-#get_features()
-
 def load_features(dir): # label):
     dir = os.path.expanduser(dir)
     tensors = []
-#    count = 0
+    count = 0
     for target in sorted(os.listdir(dir)):
         d = os.path.join(dir, target)
         print (d)
         tensors.extend(torch.load(d).squeeze(0)) #, label))
-#        if (count == 5):
-#         break
-#        count += 1
+        if (count == 5):
+             break
+        count += 1
+    #stensors = torch.stack(tensors)
+    return tensors
+
+def load_features_for_valid_test(dir):
+    dir = os.path.expanduser(dir)
+    tensors = []
+    for target in sorted(os.listdir(dir)):
+        d = os.path.join(dir, target)
+        print (d)
+        tensors.append(torch.load(d).squeeze(0)) #, label))
     #tensors = torch.stack(tensors)
     return tensors
 
@@ -111,19 +92,22 @@ def evaluate(net, validloader, criterion): #Evaluate the network on the validati
     total_loss = 0.0
     total_err = 0.0
     total_epoch = 0
-
+    print ("evaluate")
     for i, data in enumerate(validloader, 0):
-        feature = data[0]#.squeeze(0)
+        img = data[0].squeeze(0)
         label = data[1]
-
-        outputs = net(feature)
-        #print (label.shape)
-        loss = criterion(outputs, label.long())
         
+        predictions = []
+        prediction = 0
 
-        prediction = outputs.max(1, keepdim=True)[1]
-
-        total_err += prediction.ne(label.long().view_as(prediction)).sum().item()
+        for j in range(len(img)): #70 subimages
+            outputs = net(img[j].unsqueeze(0))
+            loss = criterion(outputs, label.long())
+          
+            predictions.append(outputs.max(1, keepdim=True)[1])
+        if (len(predictions[predictions==1]) > 0):
+            prediction = 1
+        total_err += prediction != label #prediction.ne(label.long().view_as(prediction)).sum().item()
         total_loss += loss.item()
         total_epoch += len(label)
 
@@ -152,12 +136,12 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
         total_epoch = 0
         for i, data in enumerate(trainloader, 0):
         #for i in range(len(train)):
-            optimizer.zero_grad() #Cleanup happens before too?
- 
+            #optimizer.zero_grad() #Cleanup happens before too?
+             
             feature = data[0]#.squeeze(0)
             label = data[1]
             prediction = 0
-
+            print(i, feature.shape)
             #Begin Forward Pass
             outputs = net(feature)
             #print (label.shape)
@@ -213,7 +197,7 @@ non_cancerous = 0
 
 
 #print (non_cancerous.shape)
-            
+
 train = load_features('Train_Alexnet_features_cancerous') #, cancerous)
 train_labels = [non_cancerous] * len(train)
 lenC = len(train)
@@ -228,18 +212,22 @@ print (len(train_labels))
 training_set = Dataset(train, train_labels)
 trainloader = torch.utils.data.DataLoader(training_set, batch_size=100, shuffle=True,num_workers=0)
 
-valid = load_features('Valid_Alexnet_features_cancerous') #, cancerous)
+
+valid = load_features_for_valid_test('Valid_Alexnet_features_cancerous') #, cancerous)
 valid_labels = [non_cancerous] * len(valid)
 lenC = len(valid)
-valid.extend(load_features('Valid_Alexnet_features_non_cancerous')) #, non_cancerous))
+valid.extend(load_features_for_valid_test('Valid_Alexnet_features_non_cancerous')) #, non_cancerous))
 valid_labels.extend([cancerous] * (len(valid)- lenC))
 valid_labels = np.array(valid_labels)
 
+print (len(valid_labels), valid[0].shape)
+
 valid = torch.stack(valid)
 valid_set = Dataset(valid, valid_labels)
-validloader = torch.utils.data.DataLoader(valid_set, batch_size=100, shuffle=True,num_workers=0)
+validloader = torch.utils.data.DataLoader(valid_set, batch_size=1, shuffle=True,num_workers=0)
              
 smallnet = SmallNet()
+
 train_net(smallnet, trainloader, validloader, num_epochs=20)
 
 #plotting - enter the train parameters and destination
