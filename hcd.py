@@ -92,7 +92,7 @@ def evaluate(net, validloader, criterion): #Evaluate the network on the validati
     total_loss = 0.0
     total_err = 0.0
     total_epoch = 0
-    print ("evaluate")
+    #print ("evaluate")
     for i, data in enumerate(validloader, 0):
         img = data[0].squeeze(0)
         label = data[1]
@@ -104,9 +104,12 @@ def evaluate(net, validloader, criterion): #Evaluate the network on the validati
             outputs = net(img[j].unsqueeze(0))
             loss = criterion(outputs, label.long())
           
-            predictions.append(outputs.max(1, keepdim=True)[1])
-        if (len(predictions[predictions==1]) > 0):
+            predictions.append(outputs.max(1, keepdim=False)[1].item())
+            #print (outputs.max(1, keepdim=False)[1].item())
+        if (1 in predictions):
             prediction = 1
+        
+        #print (len(predictions),predictions[0], prediction)
         total_err += prediction != label #prediction.ne(label.long().view_as(prediction)).sum().item()
         total_loss += loss.item()
         total_epoch += len(label)
@@ -129,6 +132,7 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
 
     #n = 0  # the number of iterations
     for epoch in range(num_epochs):
+        evaluate(net, valid, criterion)
         #shuffle(train)
         total_train_loss = 0.0
         total_train_err = 0.0
@@ -137,7 +141,6 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
         for i, data in enumerate(trainloader, 0):
         #for i in range(len(train)):
             #optimizer.zero_grad() #Cleanup happens before too?
-             
             feature = data[0]#.squeeze(0)
             label = data[1]
             prediction = 0
