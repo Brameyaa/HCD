@@ -132,7 +132,7 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
 
     #n = 0  # the number of iterations
     for epoch in range(num_epochs):
-        #shuffle(train)
+        shuffle(train)
         total_train_loss = 0.0
         total_train_err = 0.0
 
@@ -201,11 +201,11 @@ non_cancerous = 0
 #print (non_cancerous.shape)
 
 train = load_features('Train_Alexnet_features_cancerous') #, cancerous)
-train_labels = [non_cancerous] * len(train)
+train_labels = [cancerous] * len(train)
 lenC = len(train)
 
 train.extend(load_features('Train_Alexnet_features_non_cancerous')) #, non_cancerous))
-train_labels.extend([cancerous] * (len(train)- lenC))
+train_labels.extend([non_cancerous] * (len(train)- lenC))
 train_labels = np.array(train_labels)
 
 train = torch.stack(train)
@@ -216,10 +216,10 @@ trainloader = torch.utils.data.DataLoader(training_set, batch_size=100, shuffle=
 
 
 valid = load_features_for_valid_test('Valid_Alexnet_features_cancerous') #, cancerous)
-valid_labels = [non_cancerous] * len(valid)
+valid_labels = [cancerous] * len(valid)
 lenC = len(valid)
 valid.extend(load_features_for_valid_test('Valid_Alexnet_features_non_cancerous')) #, non_cancerous))
-valid_labels.extend([cancerous] * (len(valid)- lenC))
+valid_labels.extend([non_cancerous] * (len(valid)- lenC))
 valid_labels = np.array(valid_labels)
 
 print (len(valid_labels), valid[0].shape)
