@@ -132,7 +132,6 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
 
     #n = 0  # the number of iterations
     for epoch in range(num_epochs):
-        evaluate(net, valid, criterion)
         #shuffle(train)
         total_train_loss = 0.0
         total_train_err = 0.0
@@ -144,7 +143,7 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
             feature = data[0]#.squeeze(0)
             label = data[1]
             prediction = 0
-            print(i, feature.shape)
+            #print(i, feature.shape)
             #Begin Forward Pass
             outputs = net(feature)
             #print (label.shape)
