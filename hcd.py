@@ -209,60 +209,61 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
     np.savetxt("{}_val_err.csv".format(model_path), val_err)
     np.savetxt("{}_val_loss.csv".format(model_path), val_loss)
             
-            
-#non_cancerous = [[1,0]]
-cancerous = 1
-non_cancerous = 0
+get_features ()
 
-
-#print (non_cancerous.shape)
-
-train = load_features('Train_Alexnet_features_cancerous') #, cancerous)
-train_labels = [cancerous] * len(train)
-lenC = len(train)
-
-train.extend(load_features('Train_Alexnet_features_non_cancerous')) #, non_cancerous))
-train_labels.extend([non_cancerous] * (len(train)- lenC))
-train_labels = np.array(train_labels)
-
-train = torch.stack(train)
-print (train.shape)
-print (len(train_labels))
-training_set = Dataset(train, train_labels)
-trainloader = torch.utils.data.DataLoader(training_set, batch_size=100, shuffle=True,num_workers=0)
-
-
-valid = load_features('Valid_Alexnet_features_cancerous') #, cancerous)
-valid_labels = [cancerous] * len(valid)
-lenC = len(valid)
-valid.extend(load_features('Valid_Alexnet_features_non_cancerous')) #, non_cancerous))
-valid_labels.extend([non_cancerous] * (len(valid)- lenC))
-valid_labels = np.array(valid_labels)
-
-print (len(valid_labels), valid[0].shape)
-
-valid = torch.stack(valid)
-valid_set = Dataset(valid, valid_labels)
-validloader = torch.utils.data.DataLoader(valid_set, batch_size=100, shuffle=False,num_workers=0)
-
-test = load_features_for_valid_test('Test_Alexnet_features_cancerous') #, cancerous)
-test_labels = [cancerous] * len(test)
-lenC = len(test)
-test.extend(load_features_for_valid_test('Test_Alexnet_features_non_cancerous')) #, non_cancerous))
-test_labels.extend([non_cancerous] * (len(test)- lenC))
-test_labels = np.array(test_labels)
-
-test = torch.stack(test)
-test_set = Dataset(test, test_labels)
-testloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False,num_workers=0)
-             
-smallnet = SmallNet()
-
-train_net(smallnet, trainloader, validloader, num_epochs=20)
-
-#plotting - enter the train parameters and destination
-plot_training_curve('Model_Epoch19',20)
-
-test_err, test_loss = get_accuracy(smallnet, testloader, nn.CrossEntropyLoss())
-
-print ('Test Accuracy: ', str(1.0-test_err))
+###non_cancerous = [[1,0]]
+##cancerous = 1
+##non_cancerous = 0
+##
+##
+###print (non_cancerous.shape)
+##
+##train = load_features('Train_Alexnet_features_cancerous') #, cancerous)
+##train_labels = [cancerous] * len(train)
+##lenC = len(train)
+##
+##train.extend(load_features('Train_Alexnet_features_non_cancerous')) #, non_cancerous))
+##train_labels.extend([non_cancerous] * (len(train)- lenC))
+##train_labels = np.array(train_labels)
+##
+##train = torch.stack(train)
+##print (train.shape)
+##print (len(train_labels))
+##training_set = Dataset(train, train_labels)
+##trainloader = torch.utils.data.DataLoader(training_set, batch_size=100, shuffle=True,num_workers=0)
+##
+##
+##valid = load_features('Valid_Alexnet_features_cancerous') #, cancerous)
+##valid_labels = [cancerous] * len(valid)
+##lenC = len(valid)
+##valid.extend(load_features('Valid_Alexnet_features_non_cancerous')) #, non_cancerous))
+##valid_labels.extend([non_cancerous] * (len(valid)- lenC))
+##valid_labels = np.array(valid_labels)
+##
+##print (len(valid_labels), valid[0].shape)
+##
+##valid = torch.stack(valid)
+##valid_set = Dataset(valid, valid_labels)
+##validloader = torch.utils.data.DataLoader(valid_set, batch_size=100, shuffle=False,num_workers=0)
+##
+##test = load_features_for_valid_test('Test_Alexnet_features_cancerous') #, cancerous)
+##test_labels = [cancerous] * len(test)
+##lenC = len(test)
+##test.extend(load_features_for_valid_test('Test_Alexnet_features_non_cancerous')) #, non_cancerous))
+##test_labels.extend([non_cancerous] * (len(test)- lenC))
+##test_labels = np.array(test_labels)
+##
+##test = torch.stack(test)
+##test_set = Dataset(test, test_labels)
+##testloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False,num_workers=0)
+##             
+##smallnet = SmallNet()
+##
+##train_net(smallnet, trainloader, validloader, num_epochs=20)
+##
+###plotting - enter the train parameters and destination
+##plot_training_curve('Model_Epoch19',20)
+##
+##test_err, test_loss = get_accuracy(smallnet, testloader, nn.CrossEntropyLoss())
+##
+##print ('Test Accuracy: ', str(1.0-test_err))
