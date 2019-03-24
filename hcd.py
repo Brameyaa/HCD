@@ -67,14 +67,14 @@ class SmallNet(nn.Module):
 def load_features(dir): # label):
     dir = os.path.expanduser(dir)
     tensors = []
-    count = 0
+    #count = 0
     for target in sorted(os.listdir(dir)):
         d = os.path.join(dir, target)
         print (d)
         tensors.extend(torch.load(d).squeeze(0)) #, label))
-        if (count == 5):
-             break
-        count += 1
+        #if (count == 5):
+        #     break
+        #count += 1
     #stensors = torch.stack(tensors)
     return tensors
 
@@ -88,12 +88,31 @@ def load_features_for_valid_test(dir):
     #tensors = torch.stack(tensors)
     return tensors
 
-def evaluate(net, validloader, criterion): #Evaluate the network on the validation set
+def evaluate(net, dataloader, criterion): #Evaluate the network on the validation set
     total_loss = 0.0
     total_err = 0.0
     total_epoch = 0
     #print ("evaluate")
-    for i, data in enumerate(validloader, 0):
+    for i, data in enumerate(dataloader, 0):
+        feature = data[0]#.squeeze(0)
+        labels = data[1]
+        outputs = net(feature)
+        loss = criterion(outputs, labels.long())
+        predictions = outputs.max(1, keepdim=True)[1]
+        total_err += predictions.ne(labels.long().view_as(predictions)).sum().item()
+        total_loss += loss.item()
+        total_epoch += len(labels)
+    
+    err = float(total_err)/total_epoch
+    loss = float(total_loss)/total_epoch
+    return err, loss
+
+def get_accuracy (net, dataloader, criterion): #Evaluate the network on the validation set
+    total_loss = 0.0
+    total_err = 0.0
+    total_epoch = 0
+    #print ("evaluate")
+    for i, data in enumerate(dataloader, 0):
         img = data[0].squeeze(0)
         label = data[1]
         
@@ -103,21 +122,19 @@ def evaluate(net, validloader, criterion): #Evaluate the network on the validati
         for j in range(len(img)): #70 subimages
             outputs = net(img[j].unsqueeze(0))
             loss = criterion(outputs, label.long())
-          
+              
             predictions.append(outputs.max(1, keepdim=False)[1].item())
             #print (outputs.max(1, keepdim=False)[1].item())
         if (1 in predictions):
             prediction = 1
-        
         #print (len(predictions),predictions[0], prediction)
         total_err += prediction != label #prediction.ne(label.long().view_as(prediction)).sum().item()
         total_loss += loss.item()
         total_epoch += len(label)
-
+    
     err = float(total_err)/total_epoch
     loss = float(total_loss)/total_epoch
-    return err, loss
-    
+    return err, loss   
 
 def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01, num_epochs=10):
     torch.manual_seed(1000)
@@ -132,7 +149,7 @@ def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01,
 
     #n = 0  # the number of iterations
     for epoch in range(num_epochs):
-        shuffle(train)
+        #shuffle(train)
         total_train_loss = 0.0
         total_train_err = 0.0
 
@@ -215,10 +232,10 @@ training_set = Dataset(train, train_labels)
 trainloader = torch.utils.data.DataLoader(training_set, batch_size=100, shuffle=True,num_workers=0)
 
 
-valid = load_features_for_valid_test('Valid_Alexnet_features_cancerous') #, cancerous)
+valid = load_features('Valid_Alexnet_features_cancerous') #, cancerous)
 valid_labels = [cancerous] * len(valid)
 lenC = len(valid)
-valid.extend(load_features_for_valid_test('Valid_Alexnet_features_non_cancerous')) #, non_cancerous))
+valid.extend(load_features('Valid_Alexnet_features_non_cancerous')) #, non_cancerous))
 valid_labels.extend([non_cancerous] * (len(valid)- lenC))
 valid_labels = np.array(valid_labels)
 
@@ -226,7 +243,18 @@ print (len(valid_labels), valid[0].shape)
 
 valid = torch.stack(valid)
 valid_set = Dataset(valid, valid_labels)
-validloader = torch.utils.data.DataLoader(valid_set, batch_size=1, shuffle=True,num_workers=0)
+validloader = torch.utils.data.DataLoader(valid_set, batch_size=100, shuffle=False,num_workers=0)
+
+test = load_features_for_valid_test('Test_Alexnet_features_cancerous') #, cancerous)
+test_labels = [cancerous] * len(test)
+lenC = len(test)
+test.extend(load_features_for_valid_test('Test_Alexnet_features_non_cancerous')) #, non_cancerous))
+test_labels.extend([non_cancerous] * (len(test)- lenC))
+test_labels = np.array(test_labels)
+
+test = torch.stack(test)
+test_set = Dataset(test, test_labels)
+testloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False,num_workers=0)
              
 smallnet = SmallNet()
 
@@ -235,3 +263,6 @@ train_net(smallnet, trainloader, validloader, num_epochs=20)
 #plotting - enter the train parameters and destination
 plot_training_curve('Model_Epoch19',20)
 
+test_err, test_loss = get_accuracy(smallnet, testloader, nn.CrossEntropyLoss())
+
+print ('Test Accuracy: ', str(1.0-test_err))
