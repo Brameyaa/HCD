@@ -22,6 +22,7 @@ import os.path
 from torch.utils import data
 
 class Dataset(data.Dataset):
+    #This object class will be used right before training to formalize the data into an object for pytorch to use in torch.utils.data.DataLoader
    def __init__(self, image, labels):
      self.labels = labels
      self.image = image
@@ -34,6 +35,7 @@ class Dataset(data.Dataset):
 
 def make_dataset(dir, label, extensions, transform):
   #Image Size: 2048 x 1536 pixels
+  #This function will batch the large image into smaller chunks for feature detection because feature detection input is limted to 224
    images = []
    labels = []
    
@@ -72,6 +74,9 @@ def make_dataset(dir, label, extensions, transform):
    
 
 def importImages ():
+    #Prepares datasets using images in foler and the make_dataset function defined above
+    #Label '1' means cancerous tissue
+    #Label '0' means non cancerous tissue
     transform = transforms.Compose([transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     
     train_img1, train_labels1 = make_dataset('Training_data/Normal', 0, '.tif', transform)

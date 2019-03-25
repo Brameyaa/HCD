@@ -14,14 +14,28 @@ from random import shuffle
 from torch.autograd import Variable
 
 def get_features ():
-    alexNet = AlexNetFeatures()
-    alexNet.eval()
+
+
+
+    alexNet = AlexNetFeatures() #Make an AlexNetFeatures Object
+
+
+    alexNet.eval() #Sets Alexnet nn class to evaluation mode
   
     train_img, train_label, valid_img, valid_label, test_img, test_label = importImages()
+    '''
+    Grabs the batched train, val and test images and data using the dataimport.py ImportImages() python script
+    train_image...etc. are ouputs of the importImages() function '''
+
+
     print(train_img[0][0][0].shape)
     train_features = []
     valid_features = []
     test_features = []
+
+
+    '''These 3 for loops will run each set through alexnet for feature detection (Transfer Learning step)
+    output of the for loops will be .pt files that are the image data after transfer learning is applied '''
     for i in range (len(train_img)): # class 0/1 is non-cancerous, 2,3 is cancerous
         for j in range(len(train_img[i])):
             x = []
@@ -47,7 +61,9 @@ def get_features ():
             x = torch.stack(x)
             filename = 'test_features' + str(i) + "_"+ str(j) +'.pt'
             torch.save(x, filename)
-            
+
+
+#Our Neural network model
 class SmallNet(nn.Module):
     def __init__(self):
         super(SmallNet, self).__init__()
@@ -63,7 +79,13 @@ class SmallNet(nn.Module):
         x = x.squeeze(1) # Flatten to [batch_size]
 
         return x
-  
+
+ '''
+    load_features will grab the .pt files (images after transfer learning) in the directories
+    
+    and return it in tensors for training
+ 
+  '''
 def load_features(dir): # label):
     dir = os.path.expanduser(dir)
     tensors = []
@@ -137,6 +159,7 @@ def get_accuracy (net, dataloader, criterion): #Evaluate the network on the vali
     return err, loss   
 
 def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01, num_epochs=10):
+    #Train Function
     torch.manual_seed(1000)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay = weight_decay)
