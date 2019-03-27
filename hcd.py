@@ -130,7 +130,7 @@ def evaluate(net, dataloader, criterion): #Evaluate the network on the validatio
         total_epoch += len(labels)
     
     err = float(total_err)/total_epoch
-    loss = float(total_loss)/total_epoch
+    loss = float(total_loss)/(i + 1)
     return err, loss
 
 def get_accuracy (net, dataloader, criterion): #Evaluate the network on the validation set
@@ -159,7 +159,7 @@ def get_accuracy (net, dataloader, criterion): #Evaluate the network on the vali
         total_epoch += len(label)
     
     err = float(total_err)/total_epoch
-    loss = float(total_loss)/total_epoch
+    loss = float(total_loss)/(i + 1)
     return err, loss   
 
 def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01, num_epochs=10):
