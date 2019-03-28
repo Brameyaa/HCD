@@ -90,16 +90,17 @@ class SmallNet(nn.Module):
     and return it in tensors for training
  
 '''
-def load_features(dir) #, valid): # label):
+def load_features(dir): # label):
     dir = os.path.expanduser(dir)
     tensors = []
     #count = 0
     for target in sorted(os.listdir(dir)):
-    #    if (count <= 30) or valid:
         d = os.path.join(dir, target)
         print (d)
         tensors.extend(torch.load(d).squeeze(0)) #, label))
-       # count += 1
+    #    if (count == 10):
+    #         break
+    #    count += 1
     #tensors = torch.stack(tensors)
     return tensors
 
@@ -159,46 +160,9 @@ def get_accuracy (net, dataloader, criterion): #Evaluate the network on the vali
     
     err = float(total_err)/total_epoch
     loss = float(total_loss)/(i + 1)
-    return err, loss
+    return err, loss   
 
-def get_confidence (net, dataloader, criterion): #Evaluate the network on the validation set
-    total_loss = 0.0
-    total_err = 0.0
-    total_epoch = 0
-    confidences = []
-    predictions_list = []
-    #print ("evaluate")
-    for i, data in enumerate(dataloader, 0):
-        img = data[0].squeeze(0)
-        label = data[1]
-        
-        predictions = []
-        prediction = 0
-
-        for j in range(len(img)): #70 subimages
-            outputs = net(img[j].unsqueeze(0))
-            loss = criterion(outputs, label.long())
-              
-            predictions.append(outputs.max(1, keepdim=False)[1].item())
-            #print (outputs.max(1, keepdim=False)[1].item())
-        
-        if (1 in predictions):
-            prediction = 1
-        confidence = predictions.count(1)/len(predictions)
-        confidences.append(predictions.count(1)/len(predictions))
-        if (confidence < 0.2):
-            prediction = 0
-        predictions_list.append(prediction)
-        #print (len(predictions),predictions[0], prediction)
-        total_err += prediction != label #prediction.ne(label.long().view_as(prediction)).sum().item()
-        total_loss += loss.item()
-        total_epoch += len(label)
-    
-    err = float(total_err)/total_epoch
-    loss = float(total_loss)/(i + 1)
-    return err, loss, predictions_list, confidences
-
-def train_net(net, trainloader, valid, learning_rate=0.00001, weight_decay = 0.0001, num_epochs=10):
+def train_net(net, trainloader, valid, learning_rate=0.001, weight_decay = 0.01, num_epochs=10):
     #Train Function
     torch.manual_seed(1000)
     criterion = nn.CrossEntropyLoss()
@@ -281,11 +245,11 @@ non_cancerous = 0
 
 #print (non_cancerous.shape)
 
-train = load_features('Train_Alexnet_features_cancerous', False) #, cancerous)
+train = load_features('Train_Alexnet_features_cancerous') #, cancerous)
 train_labels = [cancerous] * len(train)
 lenC = len(train)
 
-train.extend(load_features('Train_Alexnet_features_non_cancerous', False)) #, non_cancerous))
+train.extend(load_features('Train_Alexnet_features_non_cancerous')) #, non_cancerous))
 train_labels.extend([non_cancerous] * (len(train)- lenC))
 train_labels = np.array(train_labels)
 
@@ -293,13 +257,13 @@ train = torch.stack(train)
 print (train.shape)
 print (len(train_labels))
 training_set = Dataset(train, train_labels)
-trainloader = torch.utils.data.DataLoader(training_set, batch_size=200, shuffle=True,num_workers=0)
+trainloader = torch.utils.data.DataLoader(training_set, batch_size=100, shuffle=True,num_workers=0)
 
 
-valid = load_features('Valid_Alexnet_features_cancerous', True) #, cancerous)
+valid = load_features('Valid_Alexnet_features_cancerous') #, cancerous)
 valid_labels = [cancerous] * len(valid)
 lenC = len(valid)
-valid.extend(load_features('Valid_Alexnet_features_non_cancerous', True)) #, non_cancerous))
+valid.extend(load_features('Valid_Alexnet_features_non_cancerous')) #, non_cancerous))
 valid_labels.extend([non_cancerous] * (len(valid)- lenC))
 valid_labels = np.array(valid_labels)
 
@@ -321,19 +285,12 @@ test_set = Dataset(test, test_labels)
 testloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False,num_workers=0)
              
 smallnet = SmallNet()
-state = torch.load('Model_Epoch_4')
-smallnet.load_state_dict(state)
 
-train_net(smallnet, trainloader, validloader, num_epochs=10)
+train_net(smallnet, trainloader, validloader, num_epochs=20)
 
 #plotting - enter the train parameters and destination
-plot_training_curve('Model_Epoch4',10)
+plot_training_curve('Model_Epoch19',20)
 
 test_err, test_loss = get_accuracy(smallnet, testloader, nn.CrossEntropyLoss())
 
-test_err, test_loss, predictions_list, confidence = get_confidence(smallnet, testloader, nn.CrossEntropyLoss())
-
 print ('Test Accuracy: ', str(1.0-test_err))
-
-for i in range(len(predictions_list)):
-    print(predictions_list[i], confidence[i])
