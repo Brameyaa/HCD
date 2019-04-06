@@ -70,11 +70,8 @@ class SmallNet(nn.Module):
         self.fc2 = nn.Linear(150, 50)
         self.fc3 = nn.Linear(50, 2)
     def forward(self, x):
-        print (x.shape)
         x = self.pool(F.relu(self.conv(x)))
-        print (x.shape)
         x = self.pool(x)
-        print (x.shape)
         x = x.view(-1, 768 * 1 * 1)
         x = F.relu(self.fc(x))
         x = F.relu(self.fc2(x))
