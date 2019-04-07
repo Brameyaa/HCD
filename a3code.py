@@ -71,11 +71,11 @@ class AlexNetFeatures(nn.Module):
 class VGG19 (nn.Module):
     
 
-    def load_weighs(self):
+    def load_weights(self):
         an_builtin = torchvision.models.vgg19(pretrained=True)
 
         feature_weight_i = [0, 2, 5, 7, 10, 12, 14, 16, 19, 21, 23, 25, 28, 30, 32, 34]
-        for i in features_weight_i:
+        for i in feature_weight_i:
             self.features[i].weight = an_builtin.features[i].weight
             self.features[i].bias = an_builtin.features[i].bias
         
@@ -120,6 +120,7 @@ class VGG19 (nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
       )
+        self.load_weights()
 
     def forward(self, x):
         x = self.features(x)
