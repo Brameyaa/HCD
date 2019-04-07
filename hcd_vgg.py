@@ -18,7 +18,7 @@ def get_features ():
     vgg19 = VGG19() 
     vgg19.eval() 
   
-    train_img, train_label, valid_img, valid_label, test_img, test_label = importImages()
+    train_img, train_label = importImages() #, valid_img, valid_label, test_img, test_label = importImages()
     '''
     Grabs the batched train, val and test images and data using the dataimport.py ImportImages() python script
     train_image...etc. are ouputs of the importImages() function '''
@@ -32,31 +32,31 @@ def get_features ():
 
     '''These 3 for loops will run each set through vgg19 for feature detection (Transfer Learning step)
     output of the for loops will be .pt files that are the image data after transfer learning is applied '''
-    for i in range (len(train_img)): # class 0/1 is non-cancerous, 2,3 is cancerous
+    for i in [0,3]: #range (len(train_img)): # class 0/1 is non-cancerous, 2,3 is cancerous
         for j in range(len(train_img[i])):
             x = []
             for k in range(len(train_img[i][j])):
                 x.append(vgg19(train_img[i][j][k].unsqueeze(0)).squeeze(0))
             x = torch.stack(x)
             filename = 'train_features_vgg' + str(i) + "_" + str(j) +'.pt'
-            print(x.shape)
+            print(filename)
             torch.save(x, filename)
-    for i in range (len(valid_img)):
-        for j in range(len(valid_img[i])):  
-            x = []
-            for k in range(len(valid_img[i][j])):
-                x.append(vgg19(valid_img[i][j][k].unsqueeze(0)).squeeze(0))
-            x = torch.stack(x)
-            filename = 'valid_features_vgg' + str(i) + "_" + str(j) +'.pt'
-            torch.save(x, filename)
-    for i in range (len(test_img)):
-        for j in range(len(test_img[i])): 
-            x = []
-            for k in range(len(test_img[i][j])):
-                x.append(vgg19(test_img[i][j][k].unsqueeze(0)).squeeze(0))
-            x = torch.stack(x)
-            filename = 'test_features_vgg' + str(i) + "_"+ str(j) +'.pt'
-            torch.save(x, filename)
+##    for i in [0,3]: #range (len(valid_img)):
+##        for j in range(len(valid_img[i])):  
+##            x = []
+##            for k in range(len(valid_img[i][j])):
+##                x.append(vgg19(valid_img[i][j][k].unsqueeze(0)).squeeze(0))
+##            x = torch.stack(x)
+##            filename = 'valid_features_vgg' + str(i) + "_" + str(j) +'.pt'
+##            torch.save(x, filename)
+##    for i in [0,3]: #range (len(test_img)):
+##        for j in range(len(test_img[i])): 
+##            x = []
+##            for k in range(len(test_img[i][j])):
+##                x.append(vgg19(test_img[i][j][k].unsqueeze(0)).squeeze(0))
+##            x = torch.stack(x)
+##            filename = 'test_features_vgg' + str(i) + "_"+ str(j) +'.pt'
+##            torch.save(x, filename)
 
 
 #Our Neural network model
@@ -64,15 +64,15 @@ class SmallNet(nn.Module):
     def __init__(self):
         super(SmallNet, self).__init__()
         self.name = "small"
-        self.conv = nn.Conv2d(256, 512, 3)
+        self.conv = nn.Conv2d(512, 768, 3)
         self.pool = nn.MaxPool2d(2, 2)
-        self.fc = nn.Linear(128 * 2 * 2, 150)
+        self.fc = nn.Linear(768 * 1 * 1, 150)
         self.fc2 = nn.Linear(150, 50)
         self.fc3 = nn.Linear(50, 2)
     def forward(self, x):
         x = self.pool(F.relu(self.conv(x)))
         x = self.pool(x)
-        x = x.view(-1, 128 * 2 * 2)
+        x = x.view(-1, 768 * 1 * 1)
         x = F.relu(self.fc(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
@@ -91,10 +91,11 @@ def load_features(dir, valid): # label):
     tensors = []
     count = 0
     for target in sorted(os.listdir(dir)):
-        if (count % 3 == 0) or valid:
+        if (count % 5 == 0) or valid:
             d = os.path.join(dir, target)
-            print (d)
-            tensors.extend(torch.load(d).squeeze(0)) #, label))
+            if 'vgg' in d:
+                print (d)
+                tensors.extend(torch.load(d).squeeze(0)) #, label))
         count += 1
     #tensors = torch.stack(tensors)
     return tensors
@@ -104,8 +105,9 @@ def load_features_for_valid_test(dir):
     tensors = []
     for target in sorted(os.listdir(dir)):
         d = os.path.join(dir, target)
-        print (d)
-        tensors.append(torch.load(d).squeeze(0)) #, label))
+        if 'vgg' in d:
+            print (d)
+            tensors.append(torch.load(d).squeeze(0)) #, label))
     #tensors = torch.stack(tensors)
     return tensors
 
@@ -266,7 +268,7 @@ def train_net(net, trainloader, valid, learning_rate=0.00001, weight_decay = 0.0
     np.savetxt("{}_val_err.csv".format(model_path), val_err)
     np.savetxt("{}_val_loss.csv".format(model_path), val_loss)
             
-get_features ()
+#get_features ()
 
 #non_cancerous = [[1,0]]
 cancerous = 1
@@ -274,57 +276,57 @@ non_cancerous = 0
 
 
 #print (non_cancerous.shape)
-##
-##train = load_features('Train_Alexnet_features_cancerous', False) #, cancerous)
-##train_labels = [cancerous] * len(train)
-##lenC = len(train)
-##
-##train.extend(load_features('Train_Alexnet_features_non_cancerous', False)) #, non_cancerous))
-##train_labels.extend([non_cancerous] * (len(train)- lenC))
-##train_labels = np.array(train_labels)
-##
-##train = torch.stack(train)
-##print (train.shape)
-##print (len(train_labels))
-##training_set = Dataset(train, train_labels)
-##trainloader = torch.utils.data.DataLoader(training_set, batch_size=200, shuffle=True,num_workers=0)
-##
-##
-##valid = load_features('Valid_Alexnet_features_cancerous', True) #, cancerous)
-##valid_labels = [cancerous] * len(valid)
-##lenC = len(valid)
-##valid.extend(load_features('Valid_Alexnet_features_non_cancerous', True)) #, non_cancerous))
-##valid_labels.extend([non_cancerous] * (len(valid)- lenC))
-##valid_labels = np.array(valid_labels)
-##
-##print (len(valid_labels), valid[0].shape)
-##
-##valid = torch.stack(valid)
-##valid_set = Dataset(valid, valid_labels)
-##validloader = torch.utils.data.DataLoader(valid_set, batch_size=100, shuffle=False,num_workers=0)
-##
-##test = load_features_for_valid_test('Test_Alexnet_features_cancerous') #, cancerous)
-##test_labels = [cancerous] * len(test)
-##lenC = len(test)
-##test.extend(load_features_for_valid_test('Test_Alexnet_features_non_cancerous')) #, non_cancerous))
-##test_labels.extend([non_cancerous] * (len(test)- lenC))
-##test_labels = np.array(test_labels)
-##
-##test = torch.stack(test)
-##test_set = Dataset(test, test_labels)
-##testloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False,num_workers=0)
-##             
-##smallnet = SmallNet()
-##state = torch.load('Model_Epoch_4')
-##smallnet.load_state_dict(state)
-##
-##train_net(smallnet, trainloader, validloader, num_epochs=10)
-##
-###plotting - enter the train parameters and destination
-##plot_training_curve('Model_Epoch4',10)
-##
-##test_err, test_loss = get_accuracy(smallnet, testloader, nn.CrossEntropyLoss())
-##
-##test_err, test_loss, predictions_list, confidence = get_confidence(smallnet, testloader, nn.CrossEntropyLoss())
-##
-##print ('Test Accuracy: ', str(1.0-test_err))
+
+train = load_features('Train_features_cancerous', False) #, cancerous)
+train_labels = [cancerous] * len(train)
+lenC = len(train)
+
+train.extend(load_features('Train_features_non_cancerous', False)) #, non_cancerous))
+train_labels.extend([non_cancerous] * (len(train)- lenC))
+train_labels = np.array(train_labels)
+
+train = torch.stack(train)
+print (train.shape)
+print (len(train_labels))
+training_set = Dataset(train, train_labels)
+trainloader = torch.utils.data.DataLoader(training_set, batch_size=200, shuffle=True,num_workers=0)
+
+
+valid = load_features('Valid_features_cancerous', True) #, cancerous)
+valid_labels = [cancerous] * len(valid)
+lenC = len(valid)
+valid.extend(load_features('Valid_features_non_cancerous', True)) #, non_cancerous))
+valid_labels.extend([non_cancerous] * (len(valid)- lenC))
+valid_labels = np.array(valid_labels)
+
+print (len(valid_labels), valid[0].shape)
+
+valid = torch.stack(valid)
+valid_set = Dataset(valid, valid_labels)
+validloader = torch.utils.data.DataLoader(valid_set, batch_size=100, shuffle=False,num_workers=0)
+
+test = load_features_for_valid_test('Test_features_cancerous') #, cancerous)
+test_labels = [cancerous] * len(test)
+lenC = len(test)
+test.extend(load_features_for_valid_test('Test_features_non_cancerous')) #, non_cancerous))
+test_labels.extend([non_cancerous] * (len(test)- lenC))
+test_labels = np.array(test_labels)
+
+test = torch.stack(test)
+test_set = Dataset(test, test_labels)
+testloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False,num_workers=0)
+             
+smallnet = SmallNet()
+#state = torch.load('Model_Epoch_4')
+#smallnet.load_state_dict(state)
+
+train_net(smallnet, trainloader, validloader, num_epochs=10)
+
+#plotting - enter the train parameters and destination
+plot_training_curve('Model_Epoch4',10)
+
+test_err, test_loss = get_accuracy(smallnet, testloader, nn.CrossEntropyLoss())
+
+test_err, test_loss, predictions_list, confidence = get_confidence(smallnet, testloader, nn.CrossEntropyLoss())
+
+print ('Test Accuracy: ', str(1.0-test_err))
